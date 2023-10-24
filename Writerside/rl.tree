@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE instance-profile
+        SYSTEM "https://resources.jetbrains.com/writerside/1.0/product-profile.dtd">
+
+<instance-profile id="rl" name="Rust Learnings"
+                  start-page="Basic-Learnings.md">
+
+    <toc-element topic="Basic-Learnings.md"/>
+</instance-profile>
