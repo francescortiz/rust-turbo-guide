@@ -6,4 +6,7 @@
                   start-page="Basic-Learnings.md">
 
     <toc-element topic="Basic-Learnings.md"/>
+    <toc-element topic="Chore.md"/>
+    <toc-element topic="Cross-Compilation.md">
+    </toc-element>
 </instance-profile>
