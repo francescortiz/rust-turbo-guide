@@ -28,7 +28,7 @@ Expressions are values that you need to use/assign/return.
 Expressions can can be put inside their own scopes `{...}`.
 
 The expression scopes can have statements inside and only if they end with an expression they return a value other
-  than `()`
+than `()`
 
 If the last element in a function is a statement, it is automatically returned.
 
@@ -67,7 +67,8 @@ Code branches are also referred to as "arms".
 
 ## If
 
-Ifs are expressions, so they can be used on variable assignment; just don't put semicolon at the end of the arms/branches:
+Ifs are expressions, so they can be used on variable assignment; just don't put semicolon at the end of the
+arms/branches:
 
 ```rust
 
@@ -83,7 +84,7 @@ let is_positive: bool = if number >= 0 {
 
 ## Iterating
 
-You have `loop`, `while`, and `for`. 
+You have `loop`, `while`, and `for`.
 
 ### `loop`
 
@@ -100,7 +101,24 @@ let result = loop {
 };
 ```
 
-Loops can be labeled do disambiguate `break` and `continue` in nested loops. Loop labels always start with a single
+### `for ... in ...`
+
+The `for` loops are like the python ones or the `for ... of` of JavaScript. Example:
+
+```rust
+for number in (1..4).rev() {
+    println!("{number}!");
+}
+```
+
+### `while`
+
+Use a `while` loop if you want to manage counters yourself.
+
+### Loop labels
+
+Loops (`loop`, `for`, `while`, ) can be labeled do disambiguate `break` and `continue` statements in nested loops. Loop labels
+always start with a single
 quote `'`:
 
 ```rust
@@ -126,17 +144,3 @@ fn main() {
     println!("End count = {count}");
 }
 ```
-
-### `for ... in ...`
-
-The `for` loops are like the python ones or the `for ... of` of JavaScript. Example:
-
-```rust
-for number in (1..4).rev() {
-    println!("{number}!");
-}
-```
-
-### `while`
-
-Use a `while` loop if you want to manage counters yourself.
