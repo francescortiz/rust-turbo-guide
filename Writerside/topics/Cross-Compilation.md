@@ -26,6 +26,7 @@ $ cat ~/.cargo/config
 [target.x86_64-pc-windows-gnu]
 linker = "x86_64-w64-mingw32-gcc"
 ```
+
 _Note: everybody mentions `.cargo/config`, I assumed it is `~/.cargo/config`._
 
 2. Build with 
@@ -34,3 +35,13 @@ _Note: everybody mentions `.cargo/config`, I assumed it is `~/.cargo/config`._
 $ cargo build --target=x86_64-pc-windows-gnu
 ```
 
+### SQLite
+
+Luckily, for sqlite you can ask the `libsqlite3-sys` crate to use a bundled `sqlite`. Add the following to your
+`Cargo.toml`:
+
+```toml
+[dependencies.rusqlite]
+version = "0.26.0"
+features = ["bundled"]
+```
