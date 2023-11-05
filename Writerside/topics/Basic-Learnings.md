@@ -117,7 +117,8 @@ Use a `while` loop if you want to manage counters yourself.
 
 ### Loop labels
 
-Loops (`loop`, `for`, `while`, ) can be labeled do disambiguate `break` and `continue` statements in nested loops. Loop labels
+Loops (`loop`, `for`, `while`, ) can be labeled do disambiguate `break` and `continue` statements in nested loops. Loop
+labels
 always start with a single
 quote `'`:
 
@@ -142,5 +143,134 @@ fn main() {
         count += 1;
     }
     println!("End count = {count}");
+}
+```
+
+## String VS string literal
+
+A string literal has fixed size defined at compile time. A String has unknown size and belongs to the heap. To create a
+String from a string literal use:
+
+```rust
+String::from("string literal")
+```
+
+Strings are treated as pointers, not values.
+
+## Stack and Heap
+
+### The tack
+
+The stack is for fixed size elements. The stack memory access is _last in, first out_. Pointers to the heap can be
+stored in the stack. Writing to the the stack is faster because there is no scanning in th heap for a gap of sufficient
+size, the location is always the top of the stack.
+
+When you pass arguments to a function, those are pushed to the stack, and they are popped off when the function
+finished.
+
+### The Heap
+
+The Heap allows elements for which size is not known at compile time or size changes. The heap always stores pointers.
+This is called _allocating on the heap_ or _allocating_. Accessing the heap is slower because it has to follow a
+pointer.
+
+## Ownership
+
+The goal of ownership is to help you manage the stack and the heap. Ownership rules:
+
+- Each value in Rust has an owner.
+- There can only be one owner at a time.
+- When the owner goes out of scope, the value will be dropped.
+
+## Allocating and deallocating
+
+Allocating ends at the end of the scope. Rust calls `drop` automatically at the end of the scope to free the memory.
+
+## Ownership: moving vs copying
+
+### Moving (or transferring ownership)
+
+When we assign a pointer to another variable, the initial variable becomes invalid and cannot be accessed unless
+the value implements the [`Copy`](#copy-trait) trait, in which case a copy of
+the contents will be created. For Strings or other objects you can `.clone()` them. This process of assigning a pointer
+to another variable and this losing access to the initial variable is called moving:
+
+```rust
+let s = String::from("Pabla");
+let t = s; // the String has moved to t, so s cannot be accessed anymore.
+```
+
+Rust by design will always make you use `.clonse()` when you want to make copies of information stored in the heap in
+order to make aware of expensive operations.
+
+### `Copy` trait
+
+It is reserved for stack types for performance reasons. It gives a compilation error if it is added to a type that
+implements the `Drop` trait.
+
+It is implemented mostly for scalar types and tuples of types that implement the `Copy` trait.
+
+### Calling functions
+
+Calling functions either moves or copies the variables to the function. Moving a variable into a function is called
+_transferring ownership_.
+
+```rust
+fn main() {
+    let s = String::from("hello");  // s comes into scope
+
+    takes_ownership(s);             // s's value moves into the function...
+                                    // ... and so is no longer valid here
+
+    let x = 5;                      // x comes into scope
+
+    makes_copy(x);                  // x would move into the function,
+                                    // but i32 is Copy, so it's okay to still
+                                    // use x afterward
+
+} // Here, x goes out of scope, then s. But because s's value was moved, nothing
+  // special happens.
+
+fn takes_ownership(some_string: String) { // some_string comes into scope
+    println!("{}", some_string);
+} // Here, some_string goes out of scope and `drop` is called. The backing
+  // memory is freed.
+
+fn makes_copy(some_integer: i32) { // some_integer comes into scope
+    println!("{}", some_integer);
+} // Here, some_integer goes out of scope. Nothing special happens.
+```
+
+Function return values are also moved out of the scope of the function and up to the caller.
+
+```rust
+fn main() {
+    let s1 = gives_ownership();         // gives_ownership moves its return
+                                        // value into s1
+
+    let s2 = String::from("hello");     // s2 comes into scope
+
+    let s3 = takes_and_gives_back(s2);  // s2 is moved into
+                                        // takes_and_gives_back, which also
+                                        // moves its return value into s3
+} // Here, s3 goes out of scope and is dropped. s2 was moved, so nothing
+  // happens. s1 goes out of scope and is dropped.
+
+fn gives_ownership() -> String {             // gives_ownership will move its
+                                             // return value into the function
+                                             // that calls it
+
+    let some_string = String::from("yours"); // some_string comes into scope
+
+    some_string                              // some_string is returned and
+                                             // moves out to the calling
+                                             // function
+}
+
+// This function takes a String and returns one
+fn takes_and_gives_back(a_string: String) -> String { // a_string comes into
+                                                      // scope
+
+    a_string  // a_string is returned and moves out to the calling function
 }
 ```
