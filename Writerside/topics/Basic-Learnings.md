@@ -162,7 +162,7 @@ Strings are treated as pointers, not values.
 ### The tack
 
 The stack is for fixed size elements. The stack memory access is _last in, first out_. Pointers to the heap can be
-stored in the stack. Writing to the the stack is faster because there is no scanning in th heap for a gap of sufficient
+stored in the stack. Writing to the stack is faster because there is no scanning in th heap for a gap of sufficient
 size, the location is always the top of the stack.
 
 When you pass arguments to a function, those are pushed to the stack, and they are popped off when the function
@@ -304,4 +304,44 @@ println!("{} and {}", r1, r2);
 
 let r3 = &mut s; // no problem
 println!("{}", r3);
+```
+
+### Slices
+
+Slices are references to parts of other elements (slice of a string or an array):
+
+```rust
+
+let s = String::from("Ghost")
+let piece = &s[0..2] // piece contains a reference NOT A COPY to 2 first 2 letters of s, "Gh"
+
+```
+
+With slices, we have guaranteed that the source cannot be modified until we are done working with one of its slices.
+
+#### Functions that return slices
+
+A function can return a slice of a reference that has been borrowed to them:
+
+```
+fn slicer(s: &str) -> &str {
+    &s[0..2]
+}
+
+let s = String::from("Ghost")
+let piece = slicer(s)
+```
+
+If you borrow many arguments, you need to use lifetimes. Lifetimes are a way of saying:
+
+> _The returned reference's lifetime is linked to the one of the parameter that has the same lifetime label._
+
+```rust
+fn slicer<'a>(a: &str, s: &'a str) -> &'a str {
+    println!("a = {a}");
+    &s[0..2]
+}
+
+let s = String::from("Ghost")
+let piece = slicer(s)
 ```
