@@ -401,8 +401,6 @@ p2 = {
 - It has to appear last
 - <img src="warning.png" alt="WARNING!" width="24" height="24" title="WARNING!"> **It moves ownership to the new struct!** <img src="warning.png" alt="WARNING!" width="24" height="24" title="WARNING!">
 
-
-
 ### Borrows need lifetimes
 
 ```
@@ -414,7 +412,7 @@ struct Human<'parent> {
 
 ```
 
-### println! and dbg! for structs
+### println! for structs
 
 structs don't implement the `std::fmt::Display` so we cannot send them right away to `println!`. `println!` can
 debug structs using the specifiers `{:?}` and `{:#?}` for pretty print. Unfortunately, structs also don't implement
@@ -448,3 +446,37 @@ rect1 is Rectangle {
     height: 50,
 }
 ```
+
+## dgb!
+
+`dbg!` allows you to log to STDERR expressions. It either moves or accepts borrowing, and returns the provided
+move/borrow. Examples:
+
+```rust
+#[derive(Debug)]
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+fn main() {
+    let scale = 2;
+    let rect1 = Rectangle {
+        width: dbg!(30 * scale),
+        height: 50,
+    };
+
+    dbg!(&rect1);
+}
+```
+
+outputs:
+
+```rust
+[src/main.rs:10] 30 * scale = 60
+[src/main.rs:14] &rect1 = Rectangle {
+    width: 60,
+    height: 50,
+}
+```
+
