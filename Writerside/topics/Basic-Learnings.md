@@ -332,7 +332,9 @@ let s = String::from("Ghost")
 let piece = slicer(s)
 ```
 
-If you borrow many arguments, you need to use lifetimes. Lifetimes are a way of saying:
+If you borrow many arguments, you need to use lifetimes. A lifetime is a label prefixed with a single quote that is
+placed between the `&` and the variable name. It needs to be declared after the function name between `<` and `>`.
+Lifetimes are a way of saying:
 
 > _The returned reference's lifetime is linked to the one of the parameter that has the same lifetime label._
 
@@ -344,4 +346,103 @@ fn slicer<'a>(a: &str, s: &'a str) -> &'a str {
 
 let s = String::from("Ghost")
 let piece = slicer(s)
+```
+
+## Structs
+
+### Types of structs
+
+#### Tuple structs
+
+```rust 
+struct Color(u32, u32, u32);
+let red = Color(255, 0, 0);
+```
+
+#### _Unit-like_ structs
+
+```rust
+struct NoColor;
+```
+
+Useless alone, but traits and enums will add more juice to the recipe.
+
+#### _Traditional_ structs
+
+Like C structs or TypeScript types.
+
+### Struct update syntax
+
+You can take the **remaining** values from another struct **of the same type**:
+
+```rust
+
+struct Pixel {
+    x: i32;
+    y: i32;
+    color: i32;
+}
+
+let p1 = Pixel {
+    x: 13,
+    y 13,
+    color: 65535 // -> Yellow
+}
+
+p2 = {
+    x: 14,
+    ..p1
+}
+
+```
+
+#### Relevant points:
+
+- It has to appear last
+- **It moves ownership to the new struct!** :smile:
+
+### Borrows need lifetimes
+
+```
+
+struct Human<'parent> {
+    name: String,
+    parent: &'parent Human<'parent>,
+}
+
+```
+
+### println! and dbg! for structs
+
+structs don't implement the `std::fmt::Display` so we cannot send them right away to `println!`. `println!` can
+debug structs using the specifiers `{:?}` and `{:#?}` for pretty print. Unfortunately, structs also don't implement
+the `Debug` trait, so that won't work either. But there is a quick trick: we can annotate the structs with
+`#[derive(Debug)]` and _voilà!_
+
+```rust
+#[derive(Debug)]
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+fn main() {
+    let rect1 = Rectangle {
+        width: 30,
+        height: 50,
+    };
+
+    println!("rect1 is {:?}", rect1);
+    println!("rect1 is {:#?}", rect1);
+}
+```
+
+Output:
+
+```
+rect1 is Rectangle { width: 30, height: 50 }
+rect1 is Rectangle {
+    width: 30,
+    height: 50,
+}
 ```
