@@ -480,3 +480,61 @@ outputs:
 }
 ```
 
+## Methods
+
+You can create methods for structs, enums or trait objects. Create additional `impl` blocks. There can be more than one
+for a given type. Example `impl`:
+
+```rust
+#[derive(Debug)]
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+impl Rectangle {
+    fn area(&self) -> u32 {
+        self.width * self.height
+    }
+    
+    fn transpose(self) -> Self {
+        Self {
+            width: self.height,
+            height: self.width,
+        }
+    }
+}
+
+impl Rectangle {
+    fn perimeter(&self) -> u32 {
+        2 * self.width + 2 * self.height
+    }
+}
+
+// Now we can do rect.area()
+```
+
+First paramater must be called `self` and have type `Self`. Self is a reference to the type. We can avoid the Self type
+though. You can use `&self`, `&mut self` or `self`. The latter is a move and it is a rare use case; this technique is
+usually used when the method transforms self into something else and you want to prevent the caller from using the
+original instance after the transformation.
+
+Methods and fields can have the same name; invocation parenthesis disclose which one you look for.
+
+### Associated functions
+
+`impl` blocks can contain functions with no reference to `Self`. These are just function, not methods. Methods and
+functions inside impl are called _associated functions_. They are invoked as `<Type>::<function>`. Example:
+
+```rust
+impl Rectangle {
+    fn square(size: u32) -> Self {
+        Self {
+            width: size,
+            height: size,
+        }
+    }
+}
+
+let s = Rectangle::square(2)
+```
