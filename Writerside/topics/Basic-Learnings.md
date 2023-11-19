@@ -399,7 +399,9 @@ p2 = {
 #### Relevant points:
 
 - It has to appear last
-- **It moves ownership to the new struct!** :smile:
+- <img src="warning.png" alt="WARNING!" width="24" height="24" title="WARNING!"> **It moves ownership to the new struct!** <img src="warning.png" alt="WARNING!" width="24" height="24" title="WARNING!">
+
+
 
 ### Borrows need lifetimes
 
