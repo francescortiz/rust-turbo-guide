@@ -538,3 +538,182 @@ impl Rectangle {
 
 let s = Rectangle::square(2)
 ```
+
+## Enums
+
+```rust
+enum Message<T> { // <- Generics!
+    Quit,
+    Move { x: i32, y: i32 },
+    Write(String),
+    ChangeColor(i32, i32, i32),
+    Apply(T),
+}
+
+impl Message<bool> { // <- Generics need to be implemented for each type!
+    fn call(&self) {
+        match self {
+            Message::Quit => {
+                println!("The Quit variant has no data to destructure.");
+            }
+            Message::Move { x, y } => {
+                println!("Move in the x direction {x} and in the y direction {y}");
+            }
+            Message::Write(text) => {
+                println!("Text message: {text}");
+            }
+            Message::ChangeColor(r, g, b) => {
+                println!("Change the color to red {r}, green {g}, and blue {b}",)
+            }
+            Message::Apply(apply) => {
+                println!("Apply {apply}");
+            }
+        }
+    }
+}
+
+```
+
+## Pattern matching
+
+```rust
+enum Coin {
+    Penny,
+    Nickel,
+    Dime,
+    Quarter,
+}
+
+fn value_in_cents(coin: Coin) -> u8 {
+    match coin {
+        Coin::Penny => 1,
+        Coin::Nickel => 5,
+        Coin::Dime => 10,
+        Coin::Quarter => 25,
+    }
+}
+```
+
+```rust
+let x = 1;
+
+match x {
+    0 => println!("zero"),
+    1 | 2 => println!("one or two"),
+    3..=5 => println!("three through five"),
+    _ => println!("anything"),
+}
+```
+
+```rust
+let x = 'c';
+
+match x {
+    'a'..='j' => println!("early ASCII letter"),
+    'k'..='z' => println!("late ASCII letter"),
+    _ => println!("something else"),
+}
+```
+
+```rust
+match (setting_value, new_setting_value) {
+    (Some(1), Some(2)) => {
+        println!("1 and 2 are ok.");
+    }
+    (Some(2), Some(y)) => {
+        println!("2 is happy with {y}.");
+    }
+    (Some(_), Some(_)) => {
+        println!("We don't care about other values as long they are there.");
+    }
+    _ => {
+        println!("One of the two was None! Unacceptable!");
+    }
+}
+```
+
+### EVIL SHADOWING!!!! 🤬
+
+```rust
+let x = Some(5);
+let y = 10;
+
+match x {
+    Some(50) => println!("Got 50"),
+    Some(y) => println!("Matched, y = {y}"), // <-- y gets shadowed 🤬🤬🤬🤬🤬
+    _ => println!("Default case, x = {:?}", x),
+}
+
+println!("at the end: x = {:?}, y = {y}", x);
+```
+
+#### ifs to the rescue!
+
+```rust
+match x {
+    Some(50) => println!("Got 50"),
+    Some(n) if n == y => println!("Matched, n = {n}"),
+    _ => println!("Default case, x = {:?}", x),
+}
+```
+
+```
+let x = 4;
+let y = false;
+
+match x {
+    4 | 5 | 6 if y => println!("yes"),
+    _ => println!("no"),
+}
+```
+
+### @ Bindings
+
+The at operator @ lets us create a variable that holds a value at the same time as we’re testing that value for a pattern match:
+
+```rust
+enum Message {
+    Hello { id: i32 },
+}
+
+let msg = Message::Hello { id: 5 };
+
+match msg {
+    Message::Hello {
+        id: id_variable @ 3..=7,
+    } => println!("Found an id in range: {}", id_variable),
+    Message::Hello { id: 10..=12 } => {
+        println!("Found an id in another range")
+    }
+    Message::Hello { id } => println!("Found some other id: {}", id),
+}
+```
+
+## Destructuring
+
+```rust
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+fn main() {
+    let p = Point { x: 0, y: 7 };
+
+    let Point { x, y } = p;
+    assert_eq!(0, x);
+    assert_eq!(7, x);
+
+    let Point { x: a, y: b } = p;
+    assert_eq!(0, a);
+    assert_eq!(7, b);
+    
+    match p {
+        Point { x, y: 0 } => println!("On the x axis at {x}"),
+        Point { x: 0, y } => println!("On the y axis at {y}"),
+        Point { x, y } => {
+            println!("On neither axis: ({x}, {y})");
+        }
+    }
+}
+```
