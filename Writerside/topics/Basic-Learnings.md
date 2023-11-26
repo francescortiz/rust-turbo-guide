@@ -669,7 +669,8 @@ match x {
 
 ### @ Bindings
 
-The at operator @ lets us create a variable that holds a value at the same time as we’re testing that value for a pattern match:
+The at operator @ lets us create a variable that holds a value at the same time as we’re testing that value for a
+pattern match:
 
 ```rust
 enum Message {
@@ -715,5 +716,16 @@ fn main() {
             println!("On neither axis: ({x}, {y})");
         }
     }
+}
+```
+
+## `if ... let`
+
+```rust
+let mut count = 0;
+if let Coin::Quarter(state) = coin {
+    println!("State quarter from {:?}!", state);
+} else {
+    count += 1;
 }
 ```
