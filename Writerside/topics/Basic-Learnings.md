@@ -399,7 +399,7 @@ p2 = {
 #### Relevant points:
 
 - It has to appear last
-- <img src="warning.png" alt="WARNING!" width="24" height="24" title="WARNING!"> **It moves ownership to the new struct!** <img src="warning.png" alt="WARNING!" width="24" height="24" title="WARNING!">
+- <img src="warning.png" alt="WARNING!" width="24" height="24" title="WARNING!"/> **It moves ownership to the new struct!** <img src="warning.png" alt="WARNING!" width="24" height="24" title="WARNING!"/>
 
 ### Borrows need lifetimes
 
@@ -729,3 +729,101 @@ if let Coin::Quarter(state) = coin {
     count += 1;
 }
 ```
+
+## Crates, modules and packages
+
+### Crate
+
+- It is the minimum compilation unit.
+- There can be many application crates, but only one library crate.
+- The root application crate is `src/main.rs`.
+- The library crate is `src/lib.rs`.
+- Additional application crates are in `src/bin/<appliation crate>.rs`.
+
+### Module
+
+Modules are declared inside root files (`src/main.rs` or `src/lib.rs`) with `mod whatever_module;`.
+
+The code of the modules can live:
+
+1. In a block of code placed instead of a semicolon right after `mod whatever_module`.
+2. In a file named `src/whatever_module.rs`.
+3. In a file named `src/whatever_module/mod.rs`.
+
+Submodules can be declared inside other modules, recurring the same 3 pattern above. Examples:
+
+Inside code:
+
+```rust
+mod another_module {
+   ...
+}
+```
+
+In files:
+
+```
+src/whatever_module/another_module.rs
+src/whatever_module/another_module/mod.rs
+```
+
+Example with nesting in one file:
+
+```rust
+// If the submodules and their items are not public we won't be able to invoke them from our file!
+mod front_of_house {
+    pub mod hosting {
+        pub fn add_to_waitlist() {}
+
+        pub fn seat_at_table() {}
+    }
+
+    pub mod serving {
+        pub fn take_order() {}
+
+        pub fn serve_order() {}
+
+        pub fn take_payment() {
+            clean_table() // Here we can invoke private function
+        }
+        
+        fn clean_table() {}
+    }
+}
+```
+
+#### Referencing modules inside the crate
+
+Absolute path
+
+```rust
+fn main() {
+    let x = crate::whatever_module::another_module::Item(true)
+}
+```
+
+`use` example:
+
+```rust
+use crate::whatever_module::another_module::Item;
+
+fn main() {
+    let x = Item(true)
+}
+```
+
+#### Visibility
+
+**Everything is private by default**
+
+If a module is declared with `pub` (`pub mod whatever_module`) then it is visible by the parent of the modulewhere it
+was defined. Same applies to modules' items.
+
+### Package
+
+?
+
+## Importing
+
+`use` brings path into scope.
+`pub` makes item public.
