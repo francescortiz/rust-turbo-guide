@@ -794,11 +794,19 @@ mod front_of_house {
 
 #### Referencing modules inside the crate
 
-Absolute path
+Absolute path (crate == _root_)
 
 ```rust
 fn main() {
     let x = crate::whatever_module::another_module::Item(true)
+}
+```
+
+Relative path
+
+```rust
+fn main() {
+    let x = whatever_module::another_module::Item(true)
 }
 ```
 
@@ -812,18 +820,38 @@ fn main() {
 }
 ```
 
+
+##### Relative paths
+
+`super::`: Parent module.
+
 #### Visibility
 
-**Everything is private by default**
+RULE 1: **Everything is private by default**
 
 If a module is declared with `pub` (`pub mod whatever_module`) then it is visible by the parent of the modulewhere it
 was defined. Same applies to modules' items.
 
+RULE 2: **struct attributes are also private by default:**
+
+```rust
+pub struct Breakfast {
+    pub toast: String,
+    seasonal_fruit: String, // -> Private!
+}
+```
+
+RULE 3: **Submodules see everything from their super modules**
+
+All submodules are defined within the context of the parent module and they have full access to it.
+
+
+#### Modules good practice
+
+A package can contain both a `src/main.rs` and `src/lib.rs`. This means that it is an executable that also exposes its
+logic as a library. In this case all the module tree is defined under `src/lib.rs` and we import it from `src/main.rs`
+by using paths starting with the module name. Example: `whaterver_page::module::submosule::Item`.
+
 ### Package
 
-?
 
-## Importing
-
-`use` brings path into scope.
-`pub` makes item public.
