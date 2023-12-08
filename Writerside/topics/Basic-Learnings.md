@@ -852,6 +852,7 @@ A package can contain both a `src/main.rs` and `src/lib.rs`. This means that it 
 logic as a library. In this case all the module tree is defined under `src/lib.rs` and we import it from `src/main.rs`
 by using paths starting with the module name. Example: `whaterver_page::module::submosule::Item`.
 
-### Package
+### `use`
 
+Use `use` to bring a module or item into a scope.
 
