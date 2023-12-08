@@ -852,6 +852,32 @@ A package can contain both a `src/main.rs` and `src/lib.rs`. This means that it 
 logic as a library. In this case all the module tree is defined under `src/lib.rs` and we import it from `src/main.rs`
 by using paths starting with the module name. Example: `whaterver_page::module::submosule::Item`.
 
-### Package
+### `use`
 
+Use `use` to bring a module or item into a scope. Also, aliases:
+
+```rust
+use module::submodule::Item as SubItem;
+```
+ 
+#### `pub use` use an export... re-export
+
+Not much to say. Expose in an upper level something that is nested.
+
+#### Importing package
+
+```rust
+use package;
+use package::Item;
+use package::submodule::SubItem;
+
+// equivalent to
+use package::{self, Item;, submodule::SubItem};
+```
+
+Also:
+
+```rust
+use package::*; // Import all public items... BE CAREFUL!!! use in tests or prelude pattern.
+```
 
