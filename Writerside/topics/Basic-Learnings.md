@@ -881,3 +881,66 @@ Also:
 use package::*; // Import all public items... BE CAREFUL!!! use in tests or prelude pattern.
 ```
 
+## Collections
+
+### Vector
+
+Vectors store elements in memory next to each other. New memory is allocated and elements might be copied to a new
+location as needed in order to make them be next to each other.
+
+#### Creation
+
+`vec!` is a macro to created populated vector. It allows to create readonly vec right away.
+
+```rust
+let v = vec![1, 2, 3];
+```
+
+Otherwise:
+
+```rust
+let mut v = Vec::new();
+v.push(1);
+v.push(2);
+v.push(3);
+```
+
+#### Reading vector
+
+```rust
+let v = vec![1, 2, 3, 4, 5];
+
+let exists = &v[1]; // Returns &2
+let exists = v.get(1); // Returns Some(&2)
+
+let does_not_exist = &v[100]; // Panic; out of bounds. Unsafe.
+let does_not_exist = v.get(100); // Returns a None. Safe.
+```
+
+```rust
+let mut v = vec![1, 2, 3, 4, 5];
+
+let first = &v[0];
+
+v.push(6); // ILEGAL: this might trigger reallocation, `first` would point to dealocated memory and we are using it below.
+
+println!("The first element is: {first}");
+```
+
+#### Iterating vectors
+
+Use `for ... in` because it guarantees immutability of the vector during the iteration.
+
+```rust
+    let v = vec![100, 32, 57];
+    for i in &v {
+        println!("{i}");
+    }
+```
+
+```rust
+    let mut v = vec![100, 32, 57];
+    for i in &mut v {
+        *i += 50; // asterisk is the dereference operator; to access the value.
+    }
+```
