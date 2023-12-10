@@ -748,7 +748,7 @@ The code of the modules can live:
 
 1. In a block of code placed instead of a semicolon right after `mod whatever_module`.
 2. In a file named `src/whatever_module.rs`.
-3. In a file named `src/whatever_module/mod.rs`.
+3. In a file named `src/whatever_module/mod.rs`. **Old stile; avoid.**
 
 Submodules can be declared inside other modules, recurring the same 3 pattern above. Examples:
 
@@ -764,7 +764,7 @@ In files:
 
 ```
 src/whatever_module/another_module.rs
-src/whatever_module/another_module/mod.rs
+src/whatever_module/another_module/mod.rs // OLD STYLE; AVOID
 ```
 
 Example with nesting in one file:
