@@ -944,3 +944,46 @@ Use `for ... in` because it guarantees immutability of the vector during the ite
         *i += 50; // asterisk is the dereference operator; to access the value.
     }
 ```
+
+### String
+
+```rust
+    let s1 = String::from("Hello, ");
+    let s2 = String::from("world!");
+    let s3 = s1 + &s2; // note s1 gets moved here and can no longer be used
+```
+
+```rust
+fn add(self, s: &str) -> String { // <- this is the signature of + with String... self is moved.
+```
+
+```rust
+let s = format!("{s1}-{s2}"); // <- nicer than + and doesn't take ownership of first string. 
+```
+
+#### String indexing `&s[1]`
+
+Not possible. Internally strings are `Vec<u8>`... bytes... big trouble with UTF-8... so not possible. Period.
+
+Also, the only way to go to position N in a UTF-8 string is to scan the string, slow performance and unpredicted time,
+better use functions that remind you that.
+
+#### String slicing `&s[a..b]`
+
+This is allowed, but if you slice in the middle of an UTF-8 char, panic and game over... **watch out!**
+
+#### Iterating strings
+
+```rust
+for c in "Зд".chars() {
+    println!("{c}");
+}
+```
+
+```rust
+for b in "Зд".bytes() {
+    println!("{b}");
+}
+```
+
+**WARNING:** On UTF-8 grapheme might be composed of more than one UTF-8 char. Those are called clusters of UTF-8 chars.
