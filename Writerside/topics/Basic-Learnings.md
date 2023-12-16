@@ -820,7 +820,6 @@ fn main() {
 }
 ```
 
-
 ##### Relative paths
 
 `super::`: Parent module.
@@ -845,7 +844,6 @@ RULE 3: **Submodules see everything from their super modules**
 
 All submodules are defined within the context of the parent module and they have full access to it.
 
-
 #### Modules good practice
 
 A package can contain both a `src/main.rs` and `src/lib.rs`. This means that it is an executable that also exposes its
@@ -859,7 +857,7 @@ Use `use` to bring a module or item into a scope. Also, aliases:
 ```rust
 use module::submodule::Item as SubItem;
 ```
- 
+
 #### `pub use` use an export... re-export
 
 Not much to say. Expose in an upper level something that is nested.
@@ -987,3 +985,66 @@ for b in "Зд".bytes() {
 ```
 
 **WARNING:** On UTF-8 grapheme might be composed of more than one UTF-8 char. Those are called clusters of UTF-8 chars.
+
+### HashMap
+
+Not included in the prelude, no macro to simplify its usage and can be iterated with a `for in` loop:
+
+```rust
+    use std::collections::HashMap;
+
+    let mut scores = HashMap::new();
+
+    scores.insert(String::from("Blue"), 10);
+    scores.insert(String::from("Yellow"), 50);
+
+    for (key, value) in &scores {
+        println!("{key}: {value}");
+    }
+```
+
+HashMaps move
+
+```rust
+    use std::collections::HashMap;
+
+    let field_name = String::from("Favorite color");
+    let field_value = String::from("Blue");
+
+    let mut map = HashMap::new();
+    map.insert(field_name, field_value);
+    // field_name and field_value are invalid at this point, try using them and
+    // see what compiler error you get!
+```
+
+Insert if not present and read:
+
+```rust
+    use std::collections::HashMap;
+
+    let mut scores = HashMap::new();
+    scores.insert(String::from("Blue"), 10);
+
+    scores.entry(String::from("Yellow")).or_insert(50);
+    scores.entry(String::from("Blue")).or_insert(50);
+```
+
+We don't need to re-apply, we can update a reference to the value because `.or_insert` returns a mutable
+reference `&mut V`
+
+```rust
+    use std::collections::HashMap;
+
+    let text = "hello world wonderful world";
+
+    let mut map = HashMap::new();
+
+    for word in text.split_whitespace() {
+        let count = map.entry(word).or_insert(0);
+        *count += 1;
+    }
+```
+
+#### HashMap's has function can be customized
+
+The default one, SipHash, is slow but safe against DoS attacks.
