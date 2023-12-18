@@ -1072,3 +1072,65 @@ panic = 'abort'
 
 If you feel like using `unwrap`, use `expect` instead, because it gives a meaningful error message.
 
+#### `?` operator in `Result`
+
+The `?` operator is almost equivalent to "unwrap `Ok` or return `Err`". The difference is that `?` calls the `from`
+function from the `From` trait on the error type of the function, which transforms values, so the error received by `?`
+is transformed into the error type of the function. These 2 pieces of code are equivalent:
+
+```rust
+    let username_file_result = File::open("hello.txt");
+
+    let mut username_file = match username_file_result {
+        Ok(file) => file,
+        Err(e) => return Err(e),
+    };
+```
+
+```rust
+   let mut username_file = File::open("hello.txt")?;
+```
+
+This is how the `from` is created to transform `io::Error` into `OurError`:
+
+```rust
+impl From<io::Error> for OurError
+```
+
+And, obviously, it is chainable (but, for peace of mind, try to avoid one-liners):
+
+```rust
+use std::fs::File;
+use std::io::{self, Read};
+
+fn read_username_from_file() -> Result<String, io::Error> {
+    let mut username = String::new();
+
+    File::open("hello.txt")?.read_to_string(&mut username)?;
+
+    Ok(username)
+}
+```
+
+But, in the future, just use a function that does it all if available, like `fs::read_to_string("hello.txt")` for this
+case.
+
+#### `?` operator in `Option`
+
+Same but, instead of `Err` you get `None`.
+
+### `main` can return a `Result`
+
+```rust
+use std::error::Error;
+use std::fs::File;
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let greeting_file = File::open("hello.txt")?;
+
+    Ok(())
+}
+```
+
+The main function may return any types that implement the `std::process::Termination` trait, which contains a function
+report that returns an ExitCode.
