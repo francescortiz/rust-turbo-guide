@@ -1048,3 +1048,27 @@ reference `&mut V`
 #### HashMap's has function can be customized
 
 The default one, SipHash, is slow but safe against DoS attacks.
+
+## Error handling
+
+### `panic!` macro
+
+Unrecoverable error. Behavior:
+
+1. Show error message or show backtrace (AKA stacktrace) with the environment variable `RUST_BACKTRACE=1` and compiled
+   with debug symbols.
+2. Unwind the stack or quit right away (use the latter when small binary is top priority).
+
+`Cargo.toml`:
+
+```toml
+[profile.release]
+panic = 'abort'
+```
+
+### `Result<T, E>`
+
+`match` is considered too verbose, to rustacians prefer `unwrap_or_else`.
+
+If you feel like using `unwrap`, use `expect` instead, because it gives a meaningful error message.
+
