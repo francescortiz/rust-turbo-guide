@@ -348,6 +348,31 @@ let s = String::from("Ghost")
 let piece = slicer(s)
 ```
 
+## Return statements
+
+Return statements can short-circuit functions anywhere:
+
+```rust
+use std::fs::File;
+use std::io::{self, Read};
+
+fn read_username_from_file() -> Result<String, io::Error> {
+    let username_file_result = File::open("hello.txt");
+
+    let mut username_file = match username_file_result {
+        Ok(file) => file,
+        Err(e) => return Err(e),  // <-- non-functional early return!!!!
+    };
+
+    let mut username = String::new();
+
+    match username_file.read_to_string(&mut username) { // <-- mutation of username
+        Ok(_) => Ok(username),
+        Err(e) => Err(e),
+    }
+}
+```
+
 ## Structs
 
 ### Types of structs
