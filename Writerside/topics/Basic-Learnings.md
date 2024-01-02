@@ -1159,3 +1159,248 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 The main function may return any types that implement the `std::process::Termination` trait, which contains a function
 report that returns an ExitCode.
+
+## When to `panic!` or return `Result`
+
+### Examples, Prototype Code, and Tests
+
+Prototyping is more comfortable with `unwrap` or `expect`. Just don't leave it there.
+
+In tests, `panic!`, `unwrap` or `expect`.
+
+When explaining by example, avoid boilerplate too.
+
+### Cases in Which You Have More Information Than the Compiler
+
+When you know it is never going to fail. In this case, use `expect` to provide documentation on the decision. Here,
+mentioning the assumption that this IP address is hardcoded will prompt us to change expect to better error handling
+code if in the future, we need to get the IP address from some other source instead
+
+```rust
+    use std::net::IpAddr;
+
+    let home: IpAddr = "127.0.0.1"
+        .parse()
+        .expect("Hardcoded IP address should be valid");
+```
+
+### Guidelines for Error Handling (from official docs, I do not fully agree)
+
+`panic!` if:
+
+- You receive values that don't make sense. (user's input might not make sense, but it is ok, don't `panic!` here).
+- After a certain point you need a specific state in order to ensure security/safeness.
+- Types are not enough to handle correctness in your code.
+- An external library returns something that it should have not.
+
+Panicking is a way of stating that a developer messed up and so the developer has to go back to the code and fix
+something.
+
+When failure is expected, use `Result`. For example, an HTTP request might fail, but it is ok.
+
+## Use types to avoid runtime checks
+
+The type system is powerful enough (and sometimes more powerful that the human mind) to keep code safe at compile time
+without the need of runtime checks + `panic!`
+calls.
+
+Example where pure types are not enough. This type, `Guess` is trusted to contain a value between 1 and 100, so you can
+use it blindly if you need numbers between 1 and 100, and you only need to pay attention when instantiating it from user
+input (or any other side effect).
+
+```rust
+pub struct Guess {
+    value: i32,
+}
+
+impl Guess {
+    pub fn new(value: i32) -> Guess {
+        if value < 1 || value > 100 {
+            panic!("Guess value must be between 1 and 100, got {}.", value);
+        }
+
+        Guess { value }
+    }
+
+    pub fn value(&self) -> i32 {
+        self.value
+    }
+}
+```
+
+## Generics
+
+In rust, generics are resolved at compile time; no runtime overhead.
+
+Generics need to be implemented for each type. For example, the following `Point` implementation only
+has `distance_from_origin` for the
+type `f32`:
+
+```rust
+struct Point<T> {
+    x: T,
+    y: T,
+}
+
+impl<T> Point<T> {
+    fn x(&self) -> &T {
+        &self.x
+    }
+}
+
+impl Point<f32> {
+    fn distance_from_origin(&self) -> f32 {
+        (self.x.powi(2) + self.y.powi(2)).sqrt()
+    }
+}
+```
+
+## Traits
+
+A trait defines functionality a particular type has and can share with other types. They are similar to OOP interfaces;
+they are a collection of functions that need to be implemented to satisfy the given trait. This allows to narrow down
+generic types.
+
+```rust
+// This trait is public
+
+pub trait Summary {
+    fn summarize(&self) -> String;
+}
+```
+
+In order to use the functions of a trait we have to bring the trait into scope:
+
+```rust
+use aggregator::{Summary, Tweet};
+
+fn main() {
+    let tweet = Tweet {
+        username: String::from("horse_ebooks"),
+        content: String::from(
+            "of course, as you probably already know, people",
+        ),
+        reply: false,
+        retweet: false,
+    };
+
+    println!("1 new tweet: {}", tweet.summarize());
+}
+```
+
+### Trait restriction
+
+In order to implement a trait into a type, either the trait or the type must be local to the crate. This ensures that
+No 2 different crates implement the same traits in the same types, resulting in no need for disambiguation.
+
+### Default trait implementation
+
+Traits can have a default implementation that can be overridden:
+
+```rust
+pub trait Summary {
+    fn summarize_author(&self) -> String;
+    
+    fn summarize(&self) -> String {
+        String::from("(Read more...)")
+    }
+}
+```
+
+Then we don't implement the method to keep default behavior:
+
+```rust
+impl Summary for Tweet {
+    fn summarize_author(&self) -> String {
+        format!("@{}", self.username)
+    }
+}
+```
+
+**NOTE:** Once overridden, there is no way to access the default one.
+
+
+### Traits as parameters
+
+```
+pub fn notify<T1: Summary, T2: Summary>(item1: &T1, item2: &T2) {
+```
+
+Syntactic sugar follows:
+
+```rust
+pub fn notify(item1: &impl Summary, item2: &impl Summary) {
+```
+
+### Many traits with `+`
+
+```rust
+pub fn notify<T: Summary + Display>(item: &T) {
+```
+
+```rust
+pub fn notify(item: &(impl Summary + Display)) {
+```
+
+#### Alternate syntax
+
+```rust
+pub fn notify<T, U>(item: &T, another: &U) {
+where 
+   T: Summary + Display
+   U: Clone + Debug
+   ...
+}
+```
+
+
+### Returning traits
+
+```rust
+fn returns_summarizable() -> impl Summary {
+```
+
+**Watch out!** Even if your function returns a "generic", only one type can be returned. Error ahead:
+
+```rust
+
+// BOOM!!!!
+
+fn returns_summarizable(switch: bool) -> impl Summary {
+    if switch {
+        NewsArticle {
+            ...
+        }
+    } else {
+        Tweet {
+            ...
+        }
+    }
+}
+```
+
+### Implement traits on generics
+
+```rust
+impl<T: Display + PartialOrd> Pair<T> {
+    fn cmp_display(&self) {
+        if self.x >= self.y {
+            println!("The largest member is x = {}", self.x);
+        } else {
+            println!("The largest member is y = {}", self.y);
+        }
+    }
+}
+```
+
+### Blanket implementations: traits on traits
+
+For example, the standard library implements the `ToString` trait for any type that implements the `Display` trait:
+
+```rust
+impl<T: Display> ToString for T {
+    // --snip--
+}
+```
+
+**Implementors** is how blanket implementations are referenced to in the documentation. 
