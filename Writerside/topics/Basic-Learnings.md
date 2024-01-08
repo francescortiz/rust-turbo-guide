@@ -429,13 +429,39 @@ p2 = {
 ### Borrows need lifetimes
 
 ```
-
 struct Human<'parent> {
     name: String,
     parent: &'parent Human<'parent>,
 }
+```
+
+#### Mix & Match
+
+With a generic:
+
+```rust
+fn func<'a, T>(s: &'a str, b: T) -> &'a str {
+```
+
+With lifetime related to scope but not to returned value.
 
 ```
+fn wrap_with<'a>(wrapper: &'a str) -> impl Fn(&str) -> String + 'a {
+```
+
+#### Lifetime elision
+
+Obvious cases don't require lifetime annotation. As the compiler evolves, more obvious cases might not need lifetime
+annotation.
+
+#### Lifetimes on methods
+
+All return values of a method by default get the lifetime of `&self`
+
+#### '`static` lifetime
+
+The `'static` lifetime denotes that the lifetime is the whole duration of the program. Literal strings are
+implicitly `'static`, because they are hardcoded in the binary.
 
 ### println! for structs
 
@@ -1319,7 +1345,6 @@ impl Summary for Tweet {
 
 **NOTE:** Once overridden, there is no way to access the default one.
 
-
 ### Traits as parameters
 
 ```
@@ -1352,7 +1377,6 @@ where
    ...
 }
 ```
-
 
 ### Returning traits
 
@@ -1404,3 +1428,4 @@ impl<T: Display> ToString for T {
 ```
 
 **Implementors** is how blanket implementations are referenced to in the documentation. 
+
