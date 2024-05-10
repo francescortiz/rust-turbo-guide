@@ -1427,5 +1427,212 @@ impl<T: Display> ToString for T {
 }
 ```
 
-**Implementors** is how blanket implementations are referenced to in the documentation. 
+**Implementors** is how blanket implementations are referenced to in the documentation.
 
+## Closures
+
+- Closures are functions that capture the scope. Syntax is `|<args>| code`.
+- Closures usually don't need type annotations for parameters or return type. Example of annotated closure:
+
+```Rust
+    let expensive_closure = |num: u32| -> u32 {
+        println!("calculating slowly...");
+        thread::sleep(Duration::from_secs(2));
+        num
+    };
+```
+
+- There are equivalent:
+
+```Rust
+fn  add_one_v1   (x: u32) -> u32 { x + 1 }
+let add_one_v2 = |x: u32| -> u32 { x + 1 };
+let add_one_v3 = |x|             { x + 1 };
+let add_one_v4 = |x|               x + 1  ;
+```
+
+- Types of the close are inferred only once:
+
+```Rust
+    let example_closure = |x| x;
+
+    let s = example_closure(String::from("hello"));
+    let n = example_closure(5); // ERROR! The clousure inferred Strings!
+```
+
+### Capturing References or Moving Ownership
+
+Closures can capture values from their environment in three ways, which directly map to the three ways a function can
+take a parameter: borrowing immutably, borrowing mutably, and taking ownership. The closure will decide which of these
+to use based on what the body of the function does with the captured values.
+
+1. Capturing immutable reference
+
+```Rust
+fn main() {
+    let list = vec![1, 2, 3];
+    println!("Before defining closure: {:?}", list);
+
+    let only_borrows = || println!("From closure: {:?}", list);
+
+    println!("Before calling closure: {:?}", list);
+    only_borrows();
+    println!("After calling closure: {:?}", list);
+}
+```
+
+2. Capturing mutable reference
+
+```Rust
+fn main() {
+    let mut list = vec![1, 2, 3];
+    println!("Before defining closure: {:?}", list);
+
+    let mut borrows_mutably = || list.push(7);
+
+    // println!("Before calling closure: {:?}", list); -> would error
+    borrows_mutably();
+    println!("After calling closure: {:?}", list);
+}
+```
+
+3. `move`: giving ownership to the closure (useful to pass data to threads)
+
+```Rust
+use std::thread;
+
+fn main() {
+let list = vec![1, 2, 3];
+println!("Before defining closure: {:?}", list);
+
+    thread::spawn(move || println!("From thread: {:?}", list))
+        .join()
+        .unwrap();
+}
+```
+
+### Moving Captured Values Out of Closures and the `Fn` Traits
+
+Closures will automatically implement one, two, or all three of these Fn traits, in an additive fashion, depending on
+how the closure’s body handles the values:
+
+1. `FnOnce` applies to closures that can be called once. All closures implement at least this trait, because all
+   closures
+   can be called. A closure that moves captured values out of its body will only implement `FnOnce` and none of the
+   other
+   `Fn` traits, because it can only be called once.
+2. `FnMut` applies to closures that don’t move captured values out of their body, but that might mutate the captured
+   values. These closures can be called more than once.
+3. `Fn` applies to closures that don’t move captured values out of their body and that don’t mutate captured values, as
+   well as closures that capture nothing from their environment.
+
+_Note: Functions can implement all three of the `Fn` traits too. If what we want to do doesn’t require capturing a value
+from the environment, we can use the name of a function rather than a closure where we need something that implements
+one of the `Fn` traits. For example, on an `Option<Vec<T>>` value, we could call `unwrap_or_else(Vec::new)` to get a
+new,
+empty vector if the value is None._
+
+#### BOOM!
+
+```Rust
+#[derive(Debug)]
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+fn main() {
+    let mut list = [
+        Rectangle { width: 10, height: 1 },
+        Rectangle { width: 3, height: 5 },
+        Rectangle { width: 7, height: 12 },
+    ];
+
+    let mut sort_operations = vec![];
+    let value = String::from("by key called");
+
+    list.sort_by_key(|r| {
+        sort_operations.push(value); // BOOM!!!!!! `value` can only be moved once but it is not a FnOnce closure
+        r.width
+    });
+    println!("{:#?}", list);
+}
+```
+
+#### Ok
+
+```Rust
+#[derive(Debug)]
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+fn main() {
+    let mut list = [
+        Rectangle { width: 10, height: 1 },
+        Rectangle { width: 3, height: 5 },
+        Rectangle { width: 7, height: 12 },
+    ];
+
+    let mut num_sort_operations = 0;
+    list.sort_by_key(|r| {
+        num_sort_operations += 1;
+        r.width
+    });
+    println!("{:#?}, sorted in {num_sort_operations} operations", list);
+}
+```
+
+## Iterators
+
+Iterators are lazy. For example, calling `.map` does nothing unless we call `.next()`.
+
+To transform an `Iterator` into a `Vec` we can call `.collect()`
+
+Iterators get "consumed": they can be iterated only once.
+
+Iterators implement the `Iterator` trait:
+
+```Rust
+pub trait Iterator {
+    type Item;
+
+    fn next(&mut self) -> Option<Self::Item>;
+
+    // methods with default implementations elided
+}
+```
+
+The `iter` method of `Vec` produces an iterator over immutable references. If we want to create an iterator that takes
+ownership of
+v1 and returns owned values, we can call `into_iter` instead of `iter`. Similarly, if we want to iterate over mutable
+references, we can call `iter_mut` instead of `iter`.
+
+Some methods of the iterator, like `sum`, consume the iterator.
+
+## Zero cost abstracgtions
+
+The rust compiler is smart:
+
+```Rust
+let buffer: &mut [i32];
+let coefficients: [i64; 12];
+let qlp_shift: i16;
+
+for i in 12..buffer.len() {
+    let prediction = coefficients.iter()
+                                 .zip(&buffer[i - 12..i])
+                                 .map(|(&c, &s)| c * s as i64)
+                                 .sum::<i64>() >> qlp_shift;
+    let delta = buffer[i];
+    buffer[i] = prediction as i32 + delta;
+}
+```
+
+Rust knows that there are 12 iterations, so it “unrolls” the loop. Unrolling is an optimization that removes the
+overhead of the loop controlling code and instead generates repetitive code for each iteration of the loop.
+
+All of the coefficients get stored in registers, which means accessing the values is very fast. There are no bounds
+checks on the array access at runtime. All these optimizations that Rust is able to apply make the resulting code
+extremely efficient.
