@@ -98,7 +98,6 @@ pub mod utils {
 
 You can also use `pub use` to re-export 3rd party items from your crates.
 
-
 ### `cargo publish`
 
 `cargo publish` publishes the packages and makes sure that you filled the mandatory fields before publishing.
@@ -119,3 +118,17 @@ Self-explanatory
 
 Marks a version as not eligible by future projects.
 
+## Workspaces
+
+A workspace is a set of packages that share the same `Cargo.lock` and output directory. They are managed by the `cargo`
+command itself. It is pretty straight forward to work with them, just check The Book's chapter about
+it: [Cargo Workspaces](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html)
+
+## Installing Binaries with cargo install
+
+The cargo install command allows you to install and use binary crates locally.
+
+## Extending Cargo with Custom Commands
+
+If a binary in your $PATH is named cargo-something, you can run it as if it was a Cargo subcommand by running cargo
+something
