@@ -1633,6 +1633,128 @@ for i in 12..buffer.len() {
 Rust knows that there are 12 iterations, so it “unrolls” the loop. Unrolling is an optimization that removes the
 overhead of the loop controlling code and instead generates repetitive code for each iteration of the loop.
 
-All of the coefficients get stored in registers, which means accessing the values is very fast. There are no bounds
+All the coefficients get stored in registers, which means accessing the values is very fast. There are no bounds
 checks on the array access at runtime. All these optimizations that Rust is able to apply make the resulting code
 extremely efficient.
+
+## Smart pointer
+
+Smart pointers, are data structures that act like a pointer but also have additional metadata and capabilities.
+
+`String` and `Vec<T>` are smart pointers: they own some memory, they allow you to manipulate and they also have
+metadata and extra capabilities or guarantees.
+
+Smart pointers are usually implemented using structs, and they also implement the `Deref` and `Drop` traits. The `Deref`
+trait allows an instance of the smart pointer struct to behave like a reference. The `Drop` trait allows you to
+customize the code that’s run when an instance of the smart pointer goes out of scope.
+
+### Common smart pointers
+
+- `Box<T>` for allocating values on the heap
+- `Rc<T>`, a reference counting type that enables multiple ownership
+- `Ref<T>` and `RefMut<T>`, accessed through `RefCell<T>`, a type that enforces the borrowing rules at runtime instead
+  of compile time
+
+### Using `Box<T>` to Point to Data on the Heap
+
+Boxes allow you to store data on the heap rather than the stack. What remains on the stack is the pointer to the heap
+data. Boxes don’t have performance overhead, other than storing their data on the heap instead of on the stack. Mostly
+used when:
+
+- Dynamic sized type that needs to be passed in static size.
+- Transfer ownership of large data without copying it.
+- When you want to own a value that implements a specific trait.
+
+Example of useless box because a pointer to an i32 has no advantage over the value itself. When a boxed is passed the
+pointer gets copied anyway:
+
+```Rust
+fn main() {
+    let b = Box::new(5);
+    println!("b = {}", b);
+}
+```
+
+**In other words, it is like a pointer.**
+
+This does not compile because the compiler cannot know the size of List.
+
+```Rust
+enum List {
+    Cons(i32, List),
+    Nil,
+}
+
+use crate::List::{Cons, Nil};
+
+fn main() {
+    let list = Cons(1, Cons(2, Cons(3, Nil)));
+}
+```
+
+This compiles because here the size of List is always size of `i32` + size of `usize` (pointer size):
+
+```Rust
+enum List {
+    Cons(i32, Box<List>),
+    Nil,
+}
+
+use crate::List::{Cons, Nil};
+
+fn main() {
+    let list = Cons(1, Box::new(Cons(2, Box::new(Cons(3, Box::new(Nil))))));
+}
+```
+
+## Pointers/references and de-references
+
+```Rust
+fn main() {
+    let x = 5;
+    let y = &x;
+
+    assert_eq!(5, x);
+    assert_eq!(5, *y);
+}
+```
+
+### `Deref` trait: treating a type like a reference
+
+```Rust
+use std::ops::Deref;
+
+struct MyBox<T>(T);
+
+impl<T> MyBox<T> {
+    fn new(x: T) -> MyBox<T> {
+        MyBox(x)
+    }
+}
+
+impl<T> Deref for MyBox<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+```
+
+Rust will call `.deref()` automatically when dereferencing a type that implements the `Deref` trait, so we can simply
+do `*customTypeValue`.
+
+#### `Deref` cohercion
+
+We can pass a type that dereferences to another type to a function that expects a reference this other type. This is
+recursive.
+
+#### `DerefMut`
+
+Same but with mutable references. Equivalences:
+
+- From &T to &U when T: Deref<Target=U>
+- From &mut T to &mut U when T: DerefMut<Target=U>
+- From &mut T to &U when T: Deref<Target=U>
+
+A 4th case would make sense.
