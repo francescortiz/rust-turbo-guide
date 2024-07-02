@@ -1707,7 +1707,9 @@ fn main() {
 }
 ```
 
-## Pointers/references and de-references
+## Smart Pointers
+
+### Pointers/references and de-references
 
 ```Rust
 fn main() {
@@ -1758,3 +1760,53 @@ Same but with mutable references. Equivalences:
 - From &mut T to &U when T: Deref<Target=U>
 
 A 4th case would make sense.
+
+### `Drop` trait (AKA destroy or destructor)
+
+Code to be executed when a smart point gets out of scope. Used to close file handles, conections, free ram, etc.
+
+#### Dropping a Value Early with `std::mem::drop`
+
+If you need to drop something before it gets out of scope, do
+
+```Rust
+use std::mem:drop
+
+fn main() {
+    let c = CustomSmartPointer {
+        data: String::from("some data"),
+    };
+    println!("CustomSmartPointer created.");
+    drop(c);
+    println!("CustomSmartPointer dropped before the end of main.");
+}
+```
+
+### `Rc<T>`: single thread reference counting
+
+- `Rc::new`: create an `Rc`.
+- `Rc::clone(&)`: create another reference to an `Rc`.
+- `Rc::strong_count`
+- `Rc::weak_count`
+
+```Rust
+enum List {
+    Cons(i32, Rc<List>),
+    Nil,
+}
+
+use crate::List::{Cons, Nil};
+use std::rc::Rc;
+
+fn main() {
+    let a = Rc::new(Cons(5, Rc::new(Cons(10, Rc::new(Nil)))));
+    println!("count after creating a = {}", Rc::strong_count(&a));
+    let b = Cons(3, Rc::clone(&a));
+    println!("count after creating b = {}", Rc::strong_count(&a));
+    {
+        let c = Cons(4, Rc::clone(&a));
+        println!("count after creating c = {}", Rc::strong_count(&a));
+    }
+    println!("count after c goes out of scope = {}", Rc::strong_count(&a));
+}
+```
