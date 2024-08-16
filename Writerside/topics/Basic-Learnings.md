@@ -1810,3 +1810,334 @@ fn main() {
     println!("count after c goes out of scope = {}", Rc::strong_count(&a));
 }
 ```
+
+### `RefCell<T>`: _interior mutability_ pattern
+
+When the rust compiler fails to accept correct code you can use unsafe. Using this unsafe to mutate an immutable
+reference is the `RefCell<T>` use case.
+
+When you need to mutate an immutable value, you store the value inside a `RefCell::new(xxx)` and then you can do
+`.borrow_mut()` to get a mutable reference to the value or `.borrow()` to get an immutable reference to the value.
+Since this has clear issues at runtime, even though it compiles if we try to get 2 mutable references at the same
+time or try to create a mutable reference while immutable references exist we don't get compile errors but we
+get runtime errors if we don't do it right.
+
+### Preventing Reference Cycles: Turning an `Rc<T>` into a `Weak<T>`
+
+`Rc::downgrade` returns a `Weak<T>`. They go to weak_count instead of strong_count and references cycles with
+will be cleaned up as soon as the strong_count reaches zero. Weak references could be gone, so
+`upgrade() -> Option<Rc<T>>` needs to be called in order to check if they still
+exists. [Example](https://doc.rust-lang.org/book/ch15-06-reference-cycles.html)
+
+## Threads and concurrency
+
+### Threads
+
+```Rust
+use std::thread;
+
+fn main() {
+    let v = vec![1, 2, 3];
+
+    let handle = thread::spawn(move || { // <- Important, move!
+        println!("Here's a vector: {v:?}");
+    });
+
+    // Let's wait for the thread
+    handle.join().unwrap();
+}
+```
+
+### Passing messages (moving values)
+
+```Rust
+use std::sync::mpsc;
+use std::thread;
+use std::time::Duration;
+
+fn main() {
+    let (tx, rx) = mpsc::channel();
+
+    let tx1 = tx.clone();
+    thread::spawn(move || {
+        let vals = vec![
+            String::from("hi"),
+            String::from("from"),
+            String::from("the"),
+            String::from("thread"),
+        ];
+
+        for val in vals {
+            tx1.send(val).unwrap(); // This moves!
+            thread::sleep(Duration::from_secs(1));
+        }
+    });
+
+    thread::spawn(move || {
+        let vals = vec![
+            String::from("more"),
+            String::from("messages"),
+            String::from("for"),
+            String::from("you"),
+        ];
+
+        for val in vals {
+            tx.send(val).unwrap(); // Many concurrent transmitters!
+            thread::sleep(Duration::from_secs(1));
+        }
+    });
+
+    for received in rx { // Iterator! Yehaaa!!!
+        println!("Got: {received}");
+    }
+}
+```
+
+### Sharing state
+
+`Arc<T>` and `Mutex<T>`. Mutex provides a thread safe lock, Arc is "atomic reference counter", which allows many threads
+to share the Mutex... **watch out for deadlocks!** (threads waiting for each other's lock)
+
+```Rust
+use std::sync::{mpsc, Arc, Mutex};
+use std::thread;
+use std::time::Duration;
+
+fn main() {
+    let (tx, rx) = mpsc::channel();
+
+    let tx1 = tx.clone(); // We need a clone, threads move!
+
+    let counter = Arc::new(Mutex::new(0));
+    let counter1 = counter.clone();
+    
+    thread::spawn(move || {
+        let vals = vec![
+            String::from("hi"),
+            String::from("from"),
+            String::from("the"),
+            String::from("thread"),
+        ];
+
+        for val in vals {
+            tx1.send(val).unwrap();
+            let mut m = counter1.lock().unwrap();
+            *m = *m + 1;
+            println!("{m}");
+            thread::sleep(Duration::from_secs(1));
+        }
+    });
+
+    thread::spawn(move || {
+        let vals = vec![
+            String::from("more"),
+            String::from("messages"),
+            String::from("for"),
+            String::from("you"),
+        ];
+
+        for val in vals {
+            tx.send(val).unwrap();
+            let mut m = counter.lock().unwrap();
+            *m = *m - 1;
+            println!("{m}");
+            thread::sleep(Duration::from_secs(1));
+        }
+    });
+
+    for received in rx {
+        println!("Got: {received}");
+    }
+}
+```
+
+### `Send` and `Sync` marker traits
+
+_NOTE: marker traits are language features, not library traits._ 
+
+The `Send` marker trait indicates that ownership of values of the type implementing Send can be transferred between
+threads. Almost every Rust type is Send, but not all, like `Rc<T>`.
+
+The `Sync` marker trait indicates that it is safe for the type implementing Sync to be referenced from multiple threads.
+In other words, any type T is Sync if &T (an immutable reference to T) is Send, meaning the reference can be sent safely
+to another thread. Similar to Send, primitive types are Sync, and types composed entirely of types that are Sync are
+also Sync.
+
+
+## Pattern matching round 2
+
+### Refutable patterns
+1. `if let PATTERN = EXPRESSION { ... }`
+2. `while let PATTERN = EXPRESSION { ... }`
+
+Example:
+```Rust
+    while let Some(top) = stack.pop() {
+        println!("{top}");
+    } 
+```
+
+### Irrefutable patterns
+
+1. `for (x,y,z) in vec` loops (for tuples and defined known structures)
+2. `let (x,y,z) = val`
+3. Function parameters: ```fn print_coordinates(&(x, y): &(i32, i32)) {```
+
+### Pattern syntax
+
+```Rust
+    let x = 5;
+    
+    match y {
+        1 | 2 => println!("one or two"),
+        3 => println!("three"),
+        _ => println!("anything"),
+    }
+    
+    let x = 5;
+    
+    match x {
+        1..=5 => println!("one through five"),
+        _ => println!("something else"),
+    }
+
+    let x = Some(5);
+    let y = 10;
+    
+    match x {
+        Some(50) => println!("Got 50"),
+        Some(y) => println!("Matched, y = {y}"),
+        _ => println!("Default case, x = {x:?}"),
+    }
+
+    println!("at the end: x = {x:?}, y = {y}");
+    
+    let x = 'c';
+
+    match x {
+        'a'..='j' => println!("early ASCII letter"),
+        'k'..='z' => println!("late ASCII letter"),
+        _ => println!("something else"),
+    }
+    
+    let p = Point { x: 0, y: 7 };
+    
+    let Point { a, b } = p; // We copy x and y to a and b
+
+    match p {
+        Point { x, y: 0 } => println!("On the x axis at {x}"),
+        Point { x: 0, _ } => println!("x is 0!"),
+        Point { x, y } => {
+            println!("On neither axis: ({x}, {y})");
+        }
+    }
+    
+... ENUMS!
+
+enum Message {
+    Quit,
+    Move { x: i32, y: i32 },
+    Write(String),
+    ChangeColor(i32, i32, i32),
+}
+
+fn main() {
+    let msg = Message::ChangeColor(0, 160, 255);
+
+    match msg {
+        Message::Quit => {
+            println!("The Quit variant has no data to destructure.");
+        }
+        Message::Move { x, y } => {
+            println!("Move in the x direction {x} and in the y direction {y}");
+        }
+        Message::Write(text) => {
+            println!("Text message: {text}");
+        }
+        Message::ChangeColor(r, g, b) => {
+            println!("Change the color to red {r}, green {g}, and blue {b}")
+        }
+    }
+}
+
+... NESTED ENUMS!
+
+enum Color {
+    Rgb(i32, i32, i32),
+    Hsv(i32, i32, i32),
+}
+
+enum Message {
+    Quit,
+    Move { x: i32, y: i32 },
+    Write(String),
+    ChangeColor(Color),
+}
+
+fn main() {
+    let msg = Message::ChangeColor(Color::Hsv(0, 160, 255));
+
+    match msg {
+        Message::ChangeColor(Color::Rgb(r, g, b)) => {
+            println!("Change color to red {r}, green {g}, and blue {b}");
+        }
+        Message::ChangeColor(Color::Hsv(h, s, v)) => {
+            println!("Change color to hue {h}, saturation {s}, value {v}")
+        }
+        _ => (),
+    }
+}
+    
+```
+
+### Ignoring variables
+
+1. Use an underscore _ in pattern matching
+2. Prefix the name with an underscore `_x`
+3. Use 2 dots .. to ignore remaining parts of value 
+```Rust
+    struct Point {
+        x: i32,
+        y: i32,
+        z: i32,
+    }
+
+    let origin = Point { x: 0, y: 0, z: 0 };
+
+    match origin {
+        Point { x, .. } => println!("x is {x}"),
+    }
+```
+
+```Rust
+fn main() {
+    let numbers = (2, 4, 8, 16, 32);
+
+    match numbers {
+        (first, .., last) => {
+            println!("Some numbers: {first}, {last}");
+        }
+    }
+}
+```
+
+### Match guards
+
+if conditions that apply to an arm in pattern matching:
+
+```Rust
+fn main() {
+    let x = Some(5);
+    let y = 10;
+
+    match x {
+        Some(50) => println!("Got 50"),
+        Some(n) if n == y => println!("Matched, n = {n}"),
+        _ => println!("Default case, x = {x:?}"),
+    }
+
+    println!("at the end: x = {x:?}, y = {y}");
+}
+
+```
+

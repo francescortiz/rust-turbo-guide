@@ -5,10 +5,11 @@
 <instance-profile id="rl" name="Rust Learnings"
                   start-page="Basic-Learnings.md">
 
-    <toc-element topic="Cargo-and-crates-io.md"/>
     <toc-element topic="Basic-Learnings.md"/>
+    <toc-element topic="Cargo-and-crates-io.md"/>
     <toc-element topic="Testing.md"/>
     <toc-element topic="Chore.md"/>
     <toc-element topic="Cross-Compilation.md">
     </toc-element>
+    <toc-element topic="sqlx.md"/>
 </instance-profile>
