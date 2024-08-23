@@ -1953,7 +1953,7 @@ fn main() {
 
 ### `Send` and `Sync` marker traits
 
-_NOTE: marker traits are language features, not library traits._ 
+_NOTE: marker traits are language features, not library traits._
 
 The `Send` marker trait indicates that ownership of values of the type implementing Send can be transferred between
 threads. Almost every Rust type is Send, but not all, like `Rc<T>`.
@@ -1963,14 +1963,15 @@ In other words, any type T is Sync if &T (an immutable reference to T) is Send, 
 to another thread. Similar to Send, primitive types are Sync, and types composed entirely of types that are Sync are
 also Sync.
 
-
 ## Pattern matching round 2
 
 ### Refutable patterns
+
 1. `if let PATTERN = EXPRESSION { ... }`
 2. `while let PATTERN = EXPRESSION { ... }`
 
 Example:
+
 ```Rust
     while let Some(top) = stack.pop() {
         println!("{top}");
@@ -2094,7 +2095,8 @@ fn main() {
 
 1. Use an underscore _ in pattern matching
 2. Prefix the name with an underscore `_x`
-3. Use 2 dots .. to ignore remaining parts of value 
+3. Use 2 dots .. to ignore remaining parts of value
+
 ```Rust
     struct Point {
         x: i32,
@@ -2141,3 +2143,157 @@ fn main() {
 
 ```
 
+## Unsafe rust
+
+It enables the following unsafe operations:
+
+- Are allowed to ignore the borrowing rules by having both immutable and mutable pointers or multiple mutable pointers
+  to the same location
+- Aren’t guaranteed to point to valid memory
+- Are allowed to be null
+- Don’t implement any automatic cleanup
+
+### Raw pointers
+
+Raw pointers can be created in safe code, but they cannot be dereferenced unless we create an unsafe block.
+
+```Rust
+   let mut num = 5;
+
+   # Raw pointers can be created outside of unsafe blocks
+   let r1 = &num as *const i32;
+   let r2 = &mut num as *mut i32; # Immutable while mutable exists... things start to get nasty.
+   
+   unsafe {
+      # Pointer to unknown location
+      let address = 0x012345usize;
+      let r = address as *const i32;
+      
+      # Dereference of raw pointers is allowed here
+      println!("r1 is: {}", *r1);
+      println!("r2 is: {}", *r2);
+      
+      
+   }
+```
+
+### Unsafe functions
+
+They need to be called within unsafe blocks. The whole body of the functions is considered unsafe. **Safe functions can
+have unsafe blocks!**
+
+```Rust
+    unsafe fn dangerous() {}
+
+    unsafe {
+        dangerous();
+    }
+```
+
+Unsafe called kept to the bare minimum with an `assert!()` call to make sure that we do the right thing:
+
+```Rust
+use std::slice;
+
+fn split_at_mut(values: &mut [i32], mid: usize) -> (&mut [i32], &mut [i32]) {
+    let len = values.len();
+    let ptr = values.as_mut_ptr();
+
+    assert!(mid <= len);
+
+    unsafe {
+        (
+            slice::from_raw_parts_mut(ptr, mid),
+            slice::from_raw_parts_mut(ptr.add(mid), len - mid),
+        )
+    }
+}
+```
+
+### `extern` functions
+
+```Rust
+extern "C" {
+    fn abs(input: i32) -> i32;
+}
+
+fn main() {
+    unsafe {
+        println!("Absolute value of -3 according to C: {}", abs(-3));
+    }
+}
+```
+
+The `"C"` _application binary interface (ABI)_ is the most common and follows the C programming language’s ABI
+
+#### Calling Rust Functions from Other Languages
+
+We add the extern keyword and specify the ABI to use just before the fn keyword for the relevant function. We also need
+to add a #[no_mangle] annotation to tell the Rust compiler not to mangle the name of this function.
+
+```Rust
+#[no_mangle]
+pub extern "C" fn call_from_c() {
+    println!("Just called a Rust function from C!");
+}
+```
+
+### Accessing or Modifying a Mutable Static Variable
+
+_static variable = global variable._
+
+```Rust
+static HELLO_WORLD: &str = "Hello, world!";
+
+fn main() {
+    println!("name is: {HELLO_WORLD}");
+}
+```
+
+- Use `SCREAMING_SNAKE_CASE`.
+- Static variables can only store references with the 'static lifetime.
+
+A subtle difference between constants and immutable static variables is that values in a static variable have a fixed
+address in memory. Using the value will always access the same data. Constants, on the other hand, are allowed to
+duplicate their data whenever they’re used. Another difference is that static variables can be mutable. Accessing and
+modifying mutable static variables is unsafe.
+
+```Rust
+static mut COUNTER: u32 = 0;
+
+fn add_to_count(inc: u32) {
+    unsafe {
+        COUNTER += inc;
+    }
+}
+
+fn main() {
+    add_to_count(3);
+
+    unsafe {
+        println!("COUNTER: {COUNTER}");
+    }
+}
+```
+
+### Implementing an Unsafe Trait
+
+A trait is unsafe when at least one of its methods has some invariant that the compiler can’t verify.
+
+```Rust
+unsafe trait Foo {
+    // methods go here
+}
+
+unsafe impl Foo for i32 {
+    // method implementations go here
+}
+
+fn main() {}
+```
+
+### Accessing Fields of a Union
+
+Unions are primarily used to interface with unions in C code. We cannot access their values outside of unsafe blocks.
+
+Read more about [unions in The Rust Reference](https://doc.rust-lang.org/reference/items/unions.html)
