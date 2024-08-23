@@ -2,12 +2,13 @@
 <buildprofiles xsi:noNamespaceSchemaLocation="https://resources.jetbrains.com/writerside/1.0/build-profiles.xsd"
                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
-    <variables>
-
-    </variables>
-    <build-profile instance="hi">
+    <build-profile instance="rl">
         <variables>
-            <noindex-content>false</noindex-content>
+            <header-logo>rust-logo-blk.svg</header-logo>
+            <custom-favicons>favicon-32x32.png</custom-favicons>
+            <color-preset>vivid</color-preset>
+            <primary-color>forest</primary-color>
+            <custom-css>custom.css</custom-css>
         </variables>
     </build-profile>
 
