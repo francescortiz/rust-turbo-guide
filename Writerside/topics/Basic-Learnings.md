@@ -2297,3 +2297,295 @@ fn main() {}
 Unions are primarily used to interface with unions in C code. We cannot access their values outside of unsafe blocks.
 
 Read more about [unions in The Rust Reference](https://doc.rust-lang.org/reference/items/unions.html)
+
+## Advanced traitss
+
+### Placeholder types
+
+The implementor of a trait will specify the concrete type to be used instead of the placeholder type for the particular
+implementation.
+
+```Rust
+pub trait Iterator {
+    type Item;
+
+    fn next(&mut self) -> Option<Self::Item>;
+}
+```
+
+### Default Generic Type Parameters and Operator Overloading
+
+Rust doesn’t allow you to create your own operators or overload arbitrary operators. But you can overload the operations
+and corresponding traits listed in std::ops by implementing the traits associated with the operator.
+
+```Rust
+use std::ops::Add;
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+impl Add for Point {
+    type Output = Point;
+
+    fn add(self, other: Point) -> Point {
+        Point {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+}
+
+fn main() {
+    assert_eq!(
+        Point { x: 1, y: 0 } + Point { x: 2, y: 3 },
+        Point { x: 3, y: 3 }
+    );
+}
+```
+
+This is possible because there is a **default type parameter <Rcs=Self>**:
+
+```Rust
+trait Add<Rhs=Self> {
+    type Output;
+
+    fn add(self, rhs: Rhs) -> Self::Output;
+}
+```
+
+This allows us to overload for related types:
+
+```Rust
+use std::ops::Add;
+
+struct Millimeters(u32);
+struct Meters(u32);
+
+impl Add<Meters> for Millimeters {
+    type Output = Millimeters;
+
+    fn add(self, other: Meters) -> Millimeters {
+        Millimeters(self.0 + (other.0 * 1000))
+    }
+}
+```
+
+You’ll use default type parameters in two main ways:
+
+- To extend a type without breaking existing code
+- To allow customization in specific cases most users won’t need
+
+### Trait method disambiguation
+
+This is the generic definition:
+
+```
+Rust<Type as Trait>::function(receiver_if_method, next_arg, ...);
+```
+
+#### With Self
+
+```Rust
+trait Pilot {
+    fn fly(&self);
+}
+
+trait Wizard {
+    fn fly(&self);
+}
+
+struct Human;
+
+impl Pilot for Human {
+    fn fly(&self) {
+        println!("This is your captain speaking.");
+    }
+}
+
+impl Wizard for Human {
+    fn fly(&self) {
+        println!("Up!");
+    }
+}
+
+impl Human {
+    fn fly(&self) {
+        println!("*waving arms furiously*");
+    }
+}
+```
+
+How to:
+
+```Rust
+fn main() {
+    let person = Human;
+    Pilot::fly(&person);
+    Wizard::fly(&person);
+    person.fly();
+}
+```
+
+#### With no Self
+
+```Rust
+trait Animal {
+    fn baby_name() -> String;
+}
+
+struct Dog;
+
+impl Dog {
+    fn baby_name() -> String {
+        String::from("Spot")
+    }
+}
+
+impl Animal for Dog {
+    fn baby_name() -> String {
+        String::from("puppy")
+    }
+}
+
+fn main() {
+    println!("A baby dog is called a {}", Dog::baby_name());
+}
+```
+
+How to:
+
+```Rust
+fn main() {
+    println!("A baby dog is called a {}", <Dog as Animal>::baby_name());
+}
+```
+
+### SuperTraits that require specific traits:
+
+```Rust
+use std::fmt;
+
+// The fmt::Display trait needs to be implement before we implement
+// this trait to a type.
+trait OutlinePrint: fmt::Display { 
+    fn outline_print(&self) {
+        let output = self.to_string();
+        let len = output.len();
+        println!("{}", "*".repeat(len + 4));
+        println!("*{}*", " ".repeat(len + 2));
+        println!("* {output} *");
+        println!("*{}*", " ".repeat(len + 2));
+        println!("{}", "*".repeat(len + 4));
+    }
+}
+```
+
+### Using the Newtype Pattern to Implement External Traits on External Types
+
+```Rust
+use std::fmt;
+
+struct Wrapper(Vec<String>);
+
+impl fmt::Display for Wrapper {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[{}]", self.0.join(", "))
+    }
+}
+
+fn main() {
+    let w = Wrapper(vec![String::from("hello"), String::from("world")]);
+    println!("w = {w}");
+}
+```
+
+The implementation of Display uses self.0 to access the inner Vec<T>, because Wrapper is a tuple struct and Vec<T> is
+the item at index 0 in the tuple. Then we can use the functionality of the Display trait on Wrapper.
+
+The downside of using this technique is that Wrapper is a new type, so it doesn’t have the methods of the value it’s
+holding. We would have to implement all the methods of Vec<T> directly on Wrapper such that the methods delegate to
+self.0, which would allow us to treat Wrapper exactly like a Vec<T>. If we wanted the new type to have every method the
+inner type has, implementing the Deref trait (discussed in Chapter 15 in the “Treating Smart Pointers Like Regular
+References with the Deref Trait” section) on the Wrapper to return the inner type would be a solution. If we don’t want
+the Wrapper type to have all the methods of the inner type—for example, to restrict the Wrapper type’s behavior—we would
+have to implement just the methods we do want manually.
+
+
+## Advanced types
+
+### Type Aliases
+
+```Rust
+type Kilometers = i32;
+type Res<T> = Result<R, Error>;
+```
+
+### The Never Type `!`
+
+A type that never returns. In other works, a statement that will exit: `continue`, `panic!, `loop`, etc.
+
+
+### Dynamically Sized Types (DST)
+
+https://doc.rust-lang.org/book/ch19-04-advanced-types.html#dynamically-sized-types-and-the-sized-trait
+
+
+## Advanced Functions and Closures
+
+### Function Pointers
+
+As an example of where you could use either a closure defined inline or a named function, let’s look at a use of the map method provided by the Iterator trait in the standard library. To use the map function to turn a vector of numbers into a vector of strings, we could use a closure, like this:
+
+    let list_of_numbers = vec![1, 2, 3];
+    let list_of_strings: Vec<String> =
+        list_of_numbers.iter().map(|i| i.to_string()).collect();
+
+Or we could name a function as the argument to map instead of the closure, like this:
+
+    let list_of_numbers = vec![1, 2, 3];
+    let list_of_strings: Vec<String> =
+        list_of_numbers.iter().map(ToString::to_string).collect();
+
+Or initialize enums:
+
+    enum Status {
+        Value(u32),
+        Stop,
+    }
+
+    let list_of_statuses: Vec<Status> = (0u32..20).map(Status::Value).collect();
+
+### Returning Closures
+
+
+```Rust
+fn returns_closure() -> Box<dyn Fn(i32) -> i32> {
+    Box::new(|x| x + 1)
+}
+```
+
+## Macros
+
+**This is a quick overview, see a more thorough explanation here: [Rust Macros](https://doc.rust-lang.org/book/ch19-06-macros.html)**
+
+Rust has 2 families of macros:
+
+### Declarative `!macro_rules`
+
+Are written and have simplified implementation as they do pattern matching,.
+
+### Procedural marcos
+
+They receive the code and work on it. There are 3 kinds:
+
+- Derive macros
+  - Simplify a bit writing macros that automatically implement traits.
+- Attribute macros
+  - Similar to derive macros, but they receive a parameter
+- Function like macros
+  - They look like function calls.
+
+
